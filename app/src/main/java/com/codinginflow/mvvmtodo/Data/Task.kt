@@ -8,7 +8,7 @@ import java.text.DateFormat
 
 // Its handy to use val instead of var
 // Making a SQL table by using @Entity
-// Making it parcable as well
+// Making it parcelable as well
 // To also auto generate the ID of the Table items
 
 @Entity(tableName = "task_table")
