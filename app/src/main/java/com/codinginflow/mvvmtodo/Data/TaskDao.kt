@@ -10,8 +10,8 @@ interface TaskDao {
     // SQL query
     // Flow is from coroutines which is a Asynchronous Stream data provider
     // We can also use Live Data.
-    @Query("SELECT * FROM task_table")
-    fun getTasks(): Flow<List<Task>>
+    @Query("SELECT * FROM task_table WHERE  name LIKE '%' || :searchQuery || '%' ORDER BY important DESC ")
+    fun getTasks(searchQuery : String): Flow<List<Task>>
 
     // Suspend is a modifier which is a simple a bg thread
     // Room take care of this thread operations
