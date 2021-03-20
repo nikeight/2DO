@@ -1,7 +1,6 @@
 package com.codinginflow.mvvmtodo.Data
 
 import androidx.room.*
-import com.codinginflow.mvvmtodo.ui.tasks.SortOrder
 import kotlinx.coroutines.flow.Flow
 
 // Here we do all the Database operations queries
