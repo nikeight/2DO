@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import com.codinginflow.mvvmtodo.Data.TaskDao
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 
 class TasksViewModel @ViewModelInject constructor(
@@ -13,15 +14,28 @@ class TasksViewModel @ViewModelInject constructor(
     // Inject Dao
 
     val searchQuery = MutableStateFlow("")
+    val sortOrder = MutableStateFlow(SortOrder.BY_DATE)
+    val hideCompleted = MutableStateFlow(false)
 
-    private val taskFlow = searchQuery.flatMapLatest {
-        taskDao.getTasks(it)
+    // Combine to actually combine three methods in one function
+    // Triple is to return three values at a time
+    // Used Lambda functions at the end.
+    private val taskFlow = combine(
+        searchQuery,
+        sortOrder,
+        hideCompleted
+    ){ query, sortOrder, hideCompleted ->
+        Triple(query,sortOrder,hideCompleted) }
+    .flatMapLatest { (query, sortOrder, hideCompleted) ->
+        taskDao.getTasks(query, sortOrder, hideCompleted)
     }
 
     val tasks = taskFlow.asLiveData()
     // {previously} taskDao.getTasks("abc").asLiveData()
     // LiveData is single Instance of the change list
     // LiveData is LifeCycle aware
+}
 
-
+enum class SortOrder {
+    BY_NAME , BY_DATE
 }

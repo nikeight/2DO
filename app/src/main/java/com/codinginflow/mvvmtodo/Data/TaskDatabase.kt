@@ -35,6 +35,7 @@ abstract class TaskDatabase : RoomDatabase() {
                 dao.insert(Task("Share this app with others",completed = true))
                 dao.insert(Task("Provides some feedback",important = true))
                 dao.insert(Task("Use this app daily",completed = true))
+                dao.insert(Task("AppChef Google Play console",completed = true))
             }
 
         }
