@@ -8,9 +8,11 @@ import com.codinginflow.mvvmtodo.Data.PreferenceManager
 import com.codinginflow.mvvmtodo.Data.SortOrder
 import com.codinginflow.mvvmtodo.Data.Task
 import com.codinginflow.mvvmtodo.Data.TaskDao
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class TasksViewModel @ViewModelInject constructor(
@@ -20,7 +22,13 @@ class TasksViewModel @ViewModelInject constructor(
     // Inject Dao
 
     val searchQuery = MutableStateFlow("")
+
     val preferencesFlow = preferenceManager.preferenceFlow
+
+    private val taskEventChannel = Channel<TasksEvent>()
+
+    // Generating yet another flow to share data with fragments. Kotlin Class
+    val tasksEvent = taskEventChannel.receiveAsFlow()
 
 //    val sortOrder = MutableStateFlow(SortOrder.BY_DATE)
 //    val hideCompleted = MutableStateFlow(false)
@@ -55,6 +63,19 @@ class TasksViewModel @ViewModelInject constructor(
     fun onTaskCheckedChanged(task: Task, isChecked: Boolean) = viewModelScope.launch{
         // Due to mutable class we have to make copy of the objects
         taskDao.update(task.copy(completed = isChecked))
+    }
+
+    fun onTaskSwipe(task: Task) = viewModelScope.launch {
+        taskDao.delete(task)
+        taskEventChannel.send(TasksEvent.showUndoDeleteTaskMessage(task))
+    }
+
+    fun onUndoDeleteClick(task: Task) = viewModelScope.launch {
+        taskDao.insert(task)
+    }
+
+    sealed class TasksEvent {
+        data class showUndoDeleteTaskMessage(val task: Task) : TasksEvent()
     }
 
     val tasks = taskFlow.asLiveData()

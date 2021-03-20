@@ -9,13 +9,17 @@ import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.codinginflow.mvvmtodo.Data.SortOrder
 import com.codinginflow.mvvmtodo.Data.Task
 import com.codinginflow.mvvmtodo.R
 import com.codinginflow.mvvmtodo.databinding.FragmentTasksBinding
 import com.codinginflow.mvvmtodo.util.onQueryTextChanged
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -37,11 +41,45 @@ class TaskFragment : Fragment(R.layout.fragment_tasks), TasksAdapter.onItemClick
                 layoutManager = LinearLayoutManager(requireContext())
                 setHasFixedSize(true)
             }
+
+            ItemTouchHelper(object: ItemTouchHelper.SimpleCallback(0,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    target: RecyclerView.ViewHolder
+                ): Boolean {
+                    return false
+                    // We don't need this
+                }
+
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                   val task = tasksAdapter.currentList[viewHolder.adapterPosition]
+                    viewModel.onTaskSwipe(task)
+                }
+            }).attachToRecyclerView(recyclerViewTasks)
         }
 
         viewModel.tasks.observe(viewLifecycleOwner) {
             // passing lambda functions
             tasksAdapter.submitList(it)
+        }
+
+        // To avoid blocking UI class using coroutines
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            // Even further decrease the Lifecycle scope
+            // Stops at when onStop is called and resumed when onStart is called.
+
+            viewModel.tasksEvent.collect { event ->
+                when(event){
+                    is TasksViewModel.TasksEvent.showUndoDeleteTaskMessage -> {
+                        Snackbar.make(requireView(), "Task Deleted", Snackbar.LENGTH_LONG)
+                            .setAction("UNDO"){
+                                viewModel.onUndoDeleteClick(event.task)
+                            }.show()
+                    }
+                }
+            }
         }
 
         setHasOptionsMenu(true)
