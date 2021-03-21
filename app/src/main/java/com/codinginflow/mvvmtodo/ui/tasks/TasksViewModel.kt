@@ -1,15 +1,13 @@
 package com.codinginflow.mvvmtodo.ui.tasks
 
+import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.codinginflow.mvvmtodo.Data.PreferenceManager
 import com.codinginflow.mvvmtodo.Data.SortOrder
 import com.codinginflow.mvvmtodo.Data.Task
 import com.codinginflow.mvvmtodo.Data.TaskDao
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -17,11 +15,14 @@ import kotlinx.coroutines.launch
 
 class TasksViewModel @ViewModelInject constructor(
     private val taskDao: TaskDao,
+    @Assisted private val state: SavedStateHandle,
     private val preferenceManager: PreferenceManager // Injecting through Dagger
 ) : ViewModel() {
     // Inject Dao
 
-    val searchQuery = MutableStateFlow("")
+    // AS in the beginning we don't wan to search for anything
+    // It update itself we just need to read it
+    val searchQuery = state.getLiveData("searchQuery","")
 
     val preferencesFlow = preferenceManager.preferenceFlow
 
@@ -37,7 +38,7 @@ class TasksViewModel @ViewModelInject constructor(
     // Triple is to return three values at a time
     // Used Lambda functions at the end.
     private val taskFlow = combine(
-        searchQuery,
+        searchQuery.asFlow(),
         preferencesFlow
     ){ query, filterPreferences ->
         Pair(query,filterPreferences) }
@@ -56,8 +57,8 @@ class TasksViewModel @ViewModelInject constructor(
         preferenceManager.updateHideCompleted(hideCompleted)
     }
 
-    fun onTaskSelected(task: Task) {
-
+    fun onTaskSelected(task: Task) = viewModelScope.launch {
+        taskEventChannel.send(TasksEvent.NavigateToEditTaskScreen(task))
     }
 
     fun onTaskCheckedChanged(task: Task, isChecked: Boolean) = viewModelScope.launch{
@@ -67,15 +68,22 @@ class TasksViewModel @ViewModelInject constructor(
 
     fun onTaskSwipe(task: Task) = viewModelScope.launch {
         taskDao.delete(task)
-        taskEventChannel.send(TasksEvent.showUndoDeleteTaskMessage(task))
+        taskEventChannel.send(TasksEvent.ShowUndoDeleteTaskMessage(task))
     }
 
     fun onUndoDeleteClick(task: Task) = viewModelScope.launch {
         taskDao.insert(task)
     }
 
+    fun onAddNewTaskClick() = viewModelScope.launch{
+        // ViewModel instruct the Fragments
+        taskEventChannel.send(TasksEvent.NavigateToAddTaskScreen)
+    }
+
     sealed class TasksEvent {
-        data class showUndoDeleteTaskMessage(val task: Task) : TasksEvent()
+        object NavigateToAddTaskScreen : TasksEvent()
+        data class NavigateToEditTaskScreen(val task: Task) : TasksEvent()
+        data class ShowUndoDeleteTaskMessage(val task: Task) : TasksEvent()
     }
 
     val tasks = taskFlow.asLiveData()
