@@ -8,4 +8,4 @@ A simple MVVM architecture based To-Do application build by following [Coding in
 - Navigation Component
 
 ### APK 
-Download the apk from [here.](https://github.com/nikeight/todo-app-MVVM/releases/tag/0.0.1)
+Download the apk from [here.](https://github.com/nikeight/todo-app-MVVM/releases/tag/0.0.2)
