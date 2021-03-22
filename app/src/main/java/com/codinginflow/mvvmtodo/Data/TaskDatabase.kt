@@ -32,10 +32,12 @@ abstract class TaskDatabase : RoomDatabase() {
             val dao = database.get().taskDao()
 
             applicationScope.launch {
-                dao.insert(Task("Share this app with others",completed = true))
-                dao.insert(Task("Provides some feedback",important = true))
-                dao.insert(Task("Use this app daily",completed = true))
-                dao.insert(Task("AppChef Google Play console",completed = true))
+                dao.insert(Task("Use this app daily.",important = true))
+                dao.insert(Task("Share this app with others.",important = true))
+                dao.insert(Task("Provides some feedback.",important = true))
+                dao.insert(Task("Swipe left or right to delete a particular task."))
+                dao.insert(Task("Use above options for sorting tasks."))
+                dao.insert(Task("Search via key words."))
             }
 
         }
